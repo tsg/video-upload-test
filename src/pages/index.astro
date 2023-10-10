@@ -1,0 +1,151 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/Card.astro';
+import { XataClient } from '../xata';
+import { XataFile } from '@xata.io/client';
+
+
+const xata = new XataClient({apiKey: import.meta.env.XATA_API_KEY})
+
+if (Astro.request.method === "POST") {
+    try {
+    
+        const formData = await Astro.request.formData()
+        const file = formData.get('video') as File;
+
+        const fileData = await file.arrayBuffer();
+
+        // Create the video record in Xata
+        const record = await xata.db.video.create({
+        });
+        console.log("🚀 ~ file: index.astro:21 ~ record:", record)
+        
+
+        // Upload the file and attach it to the video record
+        const uploadedFile = await xata.files.upload(
+            {
+            table: 'video',
+            column: 'video',
+            record: record.id
+            },
+            
+            XataFile.fromArrayBuffer(fileData, { mediaType: file.type }).toBlob()
+        );
+        console.log("🚀 ~ file: index.astro:34 ~ uploadedFile:", uploadedFile)
+
+        const updatedRecord = await xata.db.video.update(record.id, { video: { name: file.name } });
+        console.log("🚀 ~ file: index.astro:37 ~ updatedRecord:", updatedRecord)
+    }catch(err){
+        console.error(err)
+    }
+
+}
+---
+
+<Layout title="Welcome to Astro.">
+	<main class="p-10 max-w-7xl mx-auto">
+        <form action="/" enctype="multipart/form-data" id="videoForm">
+            <input type="file" name="video"  accept="video/*" id="input-tag"/>
+            <hr>
+            <button class="text-white">Submit</button>
+        </form>
+        <div class="relative">
+
+            <video controls id="video-tag" class="h-auto aspect-video">
+                <source id="video-source" src="">
+                Your browser does not support the video tag.
+            </video>	
+            <div class="absolute bottom-20 bg-red-500 w-full px-[10px] py-2">
+                <div id="seek-bar" class="bg-gray-400 h-10 w-full rounded-full">
+                    <div id="currentTime" class="bg-gray-200 h-10 rounded-full">
+
+                    </div>
+                </div>
+            </div>
+            <div id="markers">
+
+            </div>
+        </div>
+    </main>
+</Layout>
+<script>
+const videoSrc = document.querySelector("#video-source");
+const videoTag = document.querySelector("#video-tag");
+const inputTag = document.querySelector("#input-tag");
+const videoForm  = document.querySelector("#videoForm");
+const markers = document.getElementById('markers');
+const currentTime = document.getElementById('currentTime');
+
+window.addEventListener('keypress', (event) => {
+    if(event.code === 'Space') {
+        if(isVideoPlaying()){
+            videoTag?.pause()
+        } else {
+            videoTag.play();
+        }
+    }else if(event.key === 'i'){
+        console.log("in point")
+        const marker = document.createElement('div');
+    
+        const percent = videoTag.currentTime/videoTag.duration * 100
+        console.log(percent)
+        marker.classList.add("h-4",  "w-4", "bg-blue-500", "absolute", "bottom-0", "rounded-full");
+        marker.style.left = `${percent}%`;
+        markers?.appendChild(marker);
+    }else if(event.key === 'o'){
+        console.log("o point")
+    }else if(event.key=== '='){
+        if(videoTag.playbackRate <= 3.5) {
+            videoTag.playbackRate = videoTag.playbackRate + 0.25;
+        }
+    }else if(event.key=== '-'){
+        if(videoTag.playbackRate > 0.25){
+            videoTag.playbackRate = videoTag.playbackRate - 0.25;
+        }
+    }
+})
+
+const isVideoPlaying = () => {
+    const isPlaying =  !videoTag.paused && videoTag.currentTime > 0 && !videoTag.ended;
+    console.log(isPlaying);
+    return isPlaying;
+    
+}
+
+//play/pause/
+videoTag?.addEventListener('timeupdate', (event => {
+    const percent = videoTag.currentTime/videoTag.duration * 100;
+    currentTime.style.width = `${percent}%`
+    
+}))
+
+
+videoForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    console.log("Yay");
+    try {
+        
+        fetch(videoForm.action, {
+            method:"POST",
+            body: new FormData(videoForm)
+        })
+    } catch (error) {
+        console.error(error)
+    }
+})
+
+function readVideo(event) {
+    if (event.target.files && event.target.files[0]) {
+        var reader = new FileReader();
+        
+        reader.onload = function(e) {
+            videoSrc.src = e.target.result
+            videoTag.load()
+        }.bind(this)
+        
+    reader.readAsDataURL(event.target.files[0]);
+}
+}
+
+inputTag.addEventListener('change',  readVideo)
+</script>

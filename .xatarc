@@ -1,5 +1,5 @@
 {
-  "databaseURL": "https://James-Q-Quick-s-workspace-l5kbra.us-east-1.xata.sh/db/files-test",
+  "databaseURL": "https://tudor-s-workspace-3mr7hc.us-east-1.xata.sh/db/videos",
   "codegen": {
     "output": "src/xata.ts"
   }

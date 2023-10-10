@@ -1,0 +1,13 @@
+{
+  "tables": [
+    {
+      "name": "video",
+      "columns": [
+        {
+          "name": "video",
+          "type": "file"
+        }
+      ]
+    }
+  ]
+}

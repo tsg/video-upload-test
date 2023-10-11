@@ -13,8 +13,6 @@ if (Astro.request.method === "POST") {
         const formData = await Astro.request.formData()
         const file = formData.get('video') as File;
 
-        const fileData = await file.arrayBuffer();
-
         // Create the video record in Xata
         const record = await xata.db.video.create({
         });
@@ -28,8 +26,7 @@ if (Astro.request.method === "POST") {
             column: 'video',
             record: record.id
             },
-            
-            XataFile.fromArrayBuffer(fileData, { mediaType: file.type }).toBlob()
+            file
         );
         console.log("🚀 ~ file: index.astro:34 ~ uploadedFile:", uploadedFile)
 
